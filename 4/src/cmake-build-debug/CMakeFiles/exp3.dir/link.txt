@@ -1,0 +1,1 @@
+/usr/bin/c++  -g -DMALLOC_CHECK_=2  -rdynamic CMakeFiles/exp3.dir/main.cc.o CMakeFiles/exp3.dir/gc/gc.cpp.o  -o exp3 libr.a 
