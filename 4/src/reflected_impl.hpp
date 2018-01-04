@@ -10,7 +10,7 @@
 #include <functional>
 #include <algorithm>
 #include <vector>
-#include "btree.hpp"
+#include "graph.hpp"
 
 #include <rlib/stdio.hpp>
 
@@ -126,7 +126,44 @@
 //    decltype(containers.begin()) current;
 //};
 
+using namespace hust_xxxx;
+class reflected_impl {
+public:
+    using data_t = int;
+    using dataref_t = const data_t &;
+    using lang_t = std::string;
+    using langref_t = const lang_t &;
+    reflected_impl() : containers(1), current(containers.begin()) {}
 
+    void Select(size_t i) {current = containers.begin() + i;}
+    void List() {rlib::printfln("You have {} basic_graph now, selecting {}.", containers.size(), current - containers.begin());}
+    void CreateGraph(const std::string &typeStr) {containers.push_back(*newFromTypeStr(typeStr));}
+    void DestroyGraph() {containers.erase(current); current = containers.begin();}
+    lang_t LocateVex(dataref_t val) {return current->findNode(val);}
+    lang_t GetVex(langref_t lang) {return current->getNodeValue(lang);}
+    void PutVex(langref_t lang) {current->setNodeValue(lang);}
+    lang_t FirstAdjVex(langref_t lang) {return current->findFirstNearNode(lang);}
+    lang_t NextAdjVex(langref_t lang1, langref_t lang2) {return current->findNextNearNode(lang1, lang2);}
+    void InsertVex(langref_t lang) {current->setNodeValue(lang);}
+    void DeleteVex(langref_t lang) {current->removeNode(lang);}
+    void InsertArc(langref_t lang) {current->insertEdge(lang);}
+    void DeleteArc(langref_t lang) {current->removeEdge(lang);}
+
+private:
+    basic_graph<data_t> *newFromTypeStr(const std::string &typeStr) {
+        if(typeStr == "directed_weighted_graph")
+            return new directed_weighted_graph<data_t>();
+        if(typeStr == "undirected_weighted_graph")
+            return new undirected_weighted_graph<data_t>();
+        if(typeStr == "undirected_unweighted_graph")
+            return new undirected_unweighted_graph<data_t>();
+        if(typeStr == "directed_unweighted_graph")
+            return new directed_unweighted_graph<data_t>();
+        throw std::invalid_argument("invalid typestr");
+    }
+    std::vector<basic_graph<data_t>> containers;
+    decltype(containers.begin()) current;
+};
 
 extern reflected_impl impl;
 
