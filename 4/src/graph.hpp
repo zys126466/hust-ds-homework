@@ -38,7 +38,7 @@ namespace hust_xxxx {
 #ifndef NODES_PRE_ALLOC_MEM
 #define NODES_PRE_ALLOC_MEM 10000000
 #endif
-        basic_graph() : nodes(NODES_PRE_ALLOC_MEM) {}
+        basic_graph() {nodes.reserve(NODES_PRE_ALLOC_MEM);}
 #else
         basic_graph() = default;
 #endif

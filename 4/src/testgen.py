@@ -7,9 +7,9 @@ if len(sys.argv) != 2:
     exit(1)
 
 test_size = int(sys.argv[1])
-prob_skip_a_node = 0.5
-edge_per_node_begin = 2
-edge_per_node_end = 16
+prob_skip_a_node = 0.8
+edge_per_node_begin = 8
+edge_per_node_end = 64
 
 def iToVarName(i):
     return 'n'+str(i)
