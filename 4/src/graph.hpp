@@ -55,7 +55,6 @@ namespace hust_xxxx {
             if(addr.empty())
                 return addr;
             try {
-                rlib::println("DEBUG addris", nodeAlias.at(addr));
                 return nodeAlias.at(addr);
             }
             catch (std::out_of_range &) {
@@ -76,7 +75,6 @@ namespace hust_xxxx {
             static_assert(std::is_same<uint64_t, unsigned long>::value, "unsigned long isn't uint64_t");
             try {
                 uint64_t addr = std::stoul(deAlias(datAndAddr[1]), nullptr, 16);
-                rlib::println("DEBUG", addr, std::hex, addr, std::dec);
                 auto target = nodes.end();
                 try {
                     target = nodePointerToIter(reinterpret_cast<node_t *>(addr));
@@ -149,7 +147,7 @@ namespace hust_xxxx {
 //        }
 
         //Warning: O(n) is too slow!
-        size_t nodePointerToIndex(node_t *ptr) {
+        size_t nodePointerToIndex(const node_t *ptr) {
             size_t cter = 0;
             for(auto iter = nodes.begin(); iter != nodes.end(); ++iter, ++cter) {
                 if(&*iter == ptr)
@@ -158,9 +156,8 @@ namespace hust_xxxx {
             throw std::invalid_argument("nodePointerToIndex failed: node not found.");
         }
         //Warning: O(n) is too slow!
-        auto nodePointerToIter(node_t *ptr) {
+        auto nodePointerToIter(const node_t *ptr) {
             for(auto iter = nodes.begin(); iter != nodes.end(); ++iter) {
-                rlib::println("DEBUG", (uint64_t)&*iter, std::hex, (uint64_t)&*iter, std::dec);
                 if(&*iter == ptr)
                     return iter;
             }
@@ -209,21 +206,19 @@ namespace hust_xxxx {
             std::vector<bool> masks(nodes.size(), false);
             dfs_helper(func, masks, *nodes.begin());
         }
-        void dfs_helper(const node_visiter &func, std::vector<bool> &masks, const node_t &curr) {
+        void dfs_helper(const node_visiter &func, std::vector<bool> &masks, node_t &curr) {
+            masks[nodePointerToIndex(&curr)] = true;
+            func(curr);
             for(auto &edge : curr.neighbors) {
                 node_t &next = *edge.first;
                 size_t index = nodePointerToIndex(&next);
-                if(masks[index])
-                    return;
-                else {
-                    masks[index] = true;
-                    func(next);
+                if(!masks[index])
                     dfs_helper(func, masks, next);
-                }
             }
         }
         void bfs(const node_visiter &func) {
             std::vector<bool> masks(nodes.size(), false);
+            masks[0] = true; //dfs method can't apply to bfs.
             bfs_helper(func, masks, std::list<node_t *>{&*nodes.begin()});
         }
         void bfs_helper(const node_visiter &func, std::vector<bool> &masks, const std::list<node_t *> &curr) {

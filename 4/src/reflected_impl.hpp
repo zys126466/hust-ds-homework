@@ -146,7 +146,7 @@ public:
     void PutVex(langref_t lang) {(*current)->setNodeValue(lang);}
     lang_t FirstAdjVex(langref_t lang) {return (*current)->findFirstNearNode(lang);}
     lang_t NextAdjVex(langref_t lang1, langref_t lang2) {return (*current)->findNextNearNode(lang1, lang2);}
-    void InsertVex(langref_t lang) {(*current)->setNodeValue(lang);}
+    void InsertVex(langref_t lang) {this->PutVex(lang);}
     void DeleteVex(langref_t lang) {(*current)->removeNode(lang);}
     void InsertArc(langref_t lang) {(*current)->insertEdge(lang);}
     void DeleteArc(langref_t lang) {(*current)->removeEdge(lang);}
