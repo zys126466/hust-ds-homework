@@ -8,6 +8,9 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -DMALLOC_CHECK_=2")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 include_directories("/usr/include")
 include_directories("/usr/local/include")
 include_directories(".")
@@ -21,7 +24,9 @@ include_directories(".")
 add_library(r STATIC rlib/libr.cc)
 
 set(BUILD_SRC main.cc reflected_impl.hpp general_ui.hpp parser.hpp graph.hpp gc/gc.cpp gc/gc.h indexed_list.hpp)
-add_executable(exp3 ${BUILD_SRC})
-##add_dependencies(exp3 build_libr)
+add_executable(exp4 ${BUILD_SRC})
+##add_dependencies(exp4 build_libr)
 
-target_link_libraries(exp3 r)
+target_link_libraries(exp4 r)
+target_link_libraries(exp4 Threads::Threads)
+

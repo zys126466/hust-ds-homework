@@ -133,25 +133,25 @@ public:
     using dataref_t = const data_t &;
     using lang_t = std::string;
     using langref_t = const lang_t &;
-    reflected_impl() : containers(1), current(containers.begin()) {}
+    reflected_impl() : current(containers.begin()) {}
 
     // __py_ccgen_begin__
     void Select(size_t i) {current = containers.begin() + i;}
     void List() {rlib::printfln("You have {} basic_graph now, selecting {}.", containers.size(), current - containers.begin());}
-    void QuickTraverse() {current->simple_foreach(basic_graph<data_t>::printer);rlib::println();}
-    void CreateGraph(langref_t typeStr) {containers.push_back(*newFromTypeStr(typeStr));}
+    void QuickTraverse() {(*current)->simple_foreach((*current)->printer);rlib::println();}
+    void CreateGraph(langref_t typeStr) {containers.push_back(newFromTypeStr(typeStr));}
     void DestroyGraph() {containers.erase(current); current = containers.begin();}
-    lang_t LocateVex(dataref_t val) {return current->findNode(val);}
-    lang_t GetVex(langref_t lang) {return current->getNodeValue(lang);}
-    void PutVex(langref_t lang) {current->setNodeValue(lang);}
-    lang_t FirstAdjVex(langref_t lang) {return current->findFirstNearNode(lang);}
-    lang_t NextAdjVex(langref_t lang1, langref_t lang2) {return current->findNextNearNode(lang1, lang2);}
-    void InsertVex(langref_t lang) {current->setNodeValue(lang);}
-    void DeleteVex(langref_t lang) {current->removeNode(lang);}
-    void InsertArc(langref_t lang) {current->insertEdge(lang);}
-    void DeleteArc(langref_t lang) {current->removeEdge(lang);}
-    void DFSTraverse() {current->dfs(basic_graph<data_t>::printer);rlib::println();}
-    void BFSTraverse() {current->bfs(basic_graph<data_t>::printer);rlib::println();}
+    lang_t LocateVex(dataref_t val) {return (*current)->findNode(val);}
+    lang_t GetVex(langref_t lang) {return (*current)->getNodeValue(lang);}
+    void PutVex(langref_t lang) {(*current)->setNodeValue(lang);}
+    lang_t FirstAdjVex(langref_t lang) {return (*current)->findFirstNearNode(lang);}
+    lang_t NextAdjVex(langref_t lang1, langref_t lang2) {return (*current)->findNextNearNode(lang1, lang2);}
+    void InsertVex(langref_t lang) {(*current)->setNodeValue(lang);}
+    void DeleteVex(langref_t lang) {(*current)->removeNode(lang);}
+    void InsertArc(langref_t lang) {(*current)->insertEdge(lang);}
+    void DeleteArc(langref_t lang) {(*current)->removeEdge(lang);}
+    void DFSTraverse() {(*current)->dfs((*current)->printer);rlib::println();}
+    void BFSTraverse() {(*current)->bfs((*current)->printer);rlib::println();}
     // __py_ccgen_end__
 
 private:
@@ -166,7 +166,7 @@ private:
             return new directed_unweighted_graph<data_t>();
         throw std::invalid_argument("invalid typestr");
     }
-    std::vector<basic_graph<data_t>> containers;
+    std::vector<basic_graph<data_t> *> containers;
     decltype(containers.begin()) current;
 };
 

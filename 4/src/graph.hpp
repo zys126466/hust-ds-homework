@@ -17,11 +17,15 @@
 #include <stack>
 #include <unordered_map>
 
+// Warning: namespace pollution
+using namespace std::string_literals;
+
 namespace hust_xxxx {
     template <typename data_t>
-    class [[deprecated, "junk class"]] basic_graph : public GCObject {
+    class basic_graph : public GCObject {
     public:
         using weight_t = uint32_t;
+        struct node_t;
         using edge_t = std::pair<node_t *, weight_t>;
         struct node_t : public GCObject {
             node_t() = default;
@@ -51,6 +55,7 @@ namespace hust_xxxx {
             if(addr.empty())
                 return addr;
             try {
+                rlib::println("DEBUG addris", nodeAlias.at(addr));
                 return nodeAlias.at(addr);
             }
             catch (std::out_of_range &) {
@@ -58,57 +63,62 @@ namespace hust_xxxx {
             }
         }
         std::string toNodeLanguage(const node_t &node) {
-            std::stringstream ss;
-            ss << node.dat << '`' << std::hex << (uint64_t)(&node) << std::dec;
-            return std::move(ss.str());
+            return std::move(rlib::format_string("{}`{}{}{}", node.dat, std::hex, (uint64_t)(&node), std::dec));
         }
-        virtual std::string toEdgeLanguage(const node_t &from, const edge_t &to) {
-            std::stringstream ss;
-            ss << to.second << '`' << std::hex << (uint64_t)(&from) << '`' << (uint64_t)(&to.first) << std::dec;
-            return std::move(ss.str());
+        std::string toEdgeLanguage(const node_t &from, const edge_t &to) {
+            return std::move(rlib::format_string("{}`{}{}`{}{}", to.second, std::hex, (uint64_t)&from, (uint64_t)&to.first, std::dec));
         }
         auto fromNodeLanguage(const std::string &lang, bool newIfInvalidAddr = false, bool assignIfNew = false, bool assignIfExist = false) {
             auto datAndAddr = rlib::splitString(lang, '`');
             if(datAndAddr.size() != 2)
                 throw std::invalid_argument("fromNodeLanguage want a nodeLanguage with address, but got bad format.");
-            data_t val = stringToDataObj(datAndAddr[0]);
-            static_assert(std::is_same<uint64_t, unsigned long long>::value, "unsigned long long isn't uint64_t");
-            uint64_t addr = std::stoull(deAlias(datAndAddr[1]), nullptr, 16);
-
-            auto target = nodes.end();
+            data_t val = stringToDataObj<data_t>(datAndAddr[0]);
+            static_assert(std::is_same<uint64_t, unsigned long>::value, "unsigned long isn't uint64_t");
             try {
-                target = nodePointerToIter(reinterpret_cast<node_t *>(addr));
-            }
-            catch(std::invalid_argument &) {}
+                uint64_t addr = std::stoul(deAlias(datAndAddr[1]), nullptr, 16);
+                rlib::println("DEBUG", addr, std::hex, addr, std::dec);
+                auto target = nodes.end();
+                try {
+                    target = nodePointerToIter(reinterpret_cast<node_t *>(addr));
+                }
+                catch(std::invalid_argument &) {}
 
-            if(target != nodes.end()) {
-                if(assignIfExist)
-                    target->dat = val;
-                return target;
+                if(target != nodes.end()) {
+                    if(assignIfExist)
+                        target->dat = val;
+                    return target;
+                }
+            }
+            catch(std::invalid_argument &) {
+                // invalid addr, continue to try append.
+            }
+            catch(std::out_of_range &e) {
+                // seems valid addr, but out of range.
+                throw std::out_of_range(rlib::format_string("Address `{}` out_of_range, check it!(stoul says {})", datAndAddr[1], e.what()));
             }
 
             if(!newIfInvalidAddr)
-                throw std::invalid_argument(rlib::format_string("Can not find node_t at {}{}", std::hex, addr));
+                throw std::invalid_argument(rlib::format_string("Can not find node_t at {}{}", std::hex, datAndAddr[1]));
             if(assignIfNew)
-                nodes.push_back(*new node_t(val));
+                nodes.push_back(node_t(val));
             else
-                nodes.push_back(*new node_t());
+                nodes.push_back(node_t());
             if(!datAndAddr[1].empty()) {
-                nodeAlias[datAndAddr[1]] = std::to_string(reinterpret_cast<uint64_t>(&*(--nodes.end())));
+                nodeAlias[datAndAddr[1]] = rlib::format_string("{}{}{}", std::hex, (uint64_t)&*--nodes.end(), std::dec);//std::to_string(reinterpret_cast<uint64_t>(&*(--nodes.end())));
             } //appointed alias
-            return nodes.end() - 1;
+            return --nodes.end();
         }
-        virtual auto fromEdgeLanguage(const std::string &lang, bool newIfInvalidAddr = false) {
+
+        auto fromEdgeLanguage(const std::string &lang, bool newIfInvalidAddr = false) {
             auto arg = rlib::splitString(lang, '`');
             if(arg.size() != 3)
                 throw std::invalid_argument("bad edge language");
             weight_t val = stringToDataObj<weight_t>(arg[0]);
-            static_assert(std::is_same<uint64_t, unsigned long long>::value, "unsigned long long isn't uint64_t");
-            node_t *addrFrom = reinterpret_cast<node_t *>(std::stoull(deAlias(arg[1]), nullptr, 16));
-            node_t *addrTo = reinterpret_cast<node_t *>(std::stoull(deAlias(arg[2]), nullptr, 16));
+            static_assert(std::is_same<uint64_t, unsigned long>::value, "unsigned long isn't uint64_t");
+            node_t *addrFrom = reinterpret_cast<node_t *>(std::stoul(deAlias(arg[1]), nullptr, 16));
+            node_t *addrTo = reinterpret_cast<node_t *>(std::stoul(deAlias(arg[2]), nullptr, 16));
 
-            //silly clion can't deduct this type, help him out.
-            decltype(nodes.begin()) target = nodePointerToIter(addrFrom); //throws std::invalid_argument
+            auto target = nodePointerToIter(addrFrom); //throws std::invalid_argument
             nodePointerToIter(addrTo); //Confirm that nodeTo do exists.
 
             auto pos = std::find_if(target->neighbors.begin(), target->neighbors.end(), [&](const edge_t &e){
@@ -149,7 +159,8 @@ namespace hust_xxxx {
         }
         //Warning: O(n) is too slow!
         auto nodePointerToIter(node_t *ptr) {
-            for(auto iter = nodes.begin(); iter != nodes.end(); ++iter, ++cter) {
+            for(auto iter = nodes.begin(); iter != nodes.end(); ++iter) {
+                rlib::println("DEBUG", (uint64_t)&*iter, std::hex, (uint64_t)&*iter, std::dec);
                 if(&*iter == ptr)
                     return iter;
             }
@@ -172,28 +183,28 @@ namespace hust_xxxx {
         }
         std::string findFirstNearNode(const std::string &lang) {
             auto node = fromNodeLanguage(lang);
-            return node->neighbors.empty() ? "`" : toNodeLanguage(*node->neighbors.begin());
+            return node->neighbors.empty() ? "`" : toNodeLanguage(*node->neighbors.begin()->first);
         }
         std::string findNextNearNode(const std::string &centerNd, const std::string &posNd) {
             auto center = fromNodeLanguage(centerNd);
             auto pos = fromNodeLanguage(posNd);
             for(auto iter = center->neighbors.begin(); iter != center->neighbors.end(); ++iter) {
-                if (&*iter == pos) {
+                if (iter->first == &*pos) {
                     ++iter;
                     if(iter == center->neighbors.end())
                         return "`";
                     else
-                        return toNodeLanguage(*iter);
+                        return toNodeLanguage(*iter->first);
                 }
             }
             return "`";
         }
         void removeNode(const std::string &lang) {
-            nodes.erase(nodePointerToIter(fromNodeLanguage(lang)));
+            nodes.erase(fromNodeLanguage(lang));
         }
 
         using node_visiter = std::function<void(node_t &)>;
-        static const node_visiter printer = [](node_t &nd){rlib::printf("{} ", nd.dat);};
+        const node_visiter printer = [](node_t &nd){rlib::printf("{}`{}{}{} ", nd.dat, std::hex, (uint64_t)&nd, std::dec);};
         void dfs(const node_visiter &func) {
             std::vector<bool> masks(nodes.size(), false);
             dfs_helper(func, masks, *nodes.begin());
@@ -213,23 +224,23 @@ namespace hust_xxxx {
         }
         void bfs(const node_visiter &func) {
             std::vector<bool> masks(nodes.size(), false);
-            bfs_helper(func, masks, *nodes.begin());
+            bfs_helper(func, masks, std::list<node_t *>{&*nodes.begin()});
         }
-        void bfs_helper(const node_visiter &func, std::vector<bool> &masks, const std::list<node_t &> &curr) {
-            std::list<node_t &> next;
-            for(node_t &node : curr) {
-                for(auto &edge : node.neighbors) {
+        void bfs_helper(const node_visiter &func, std::vector<bool> &masks, const std::list<node_t *> &curr) {
+            std::list<node_t *> next;
+            for(node_t *node : curr) {
+                for(auto &edge : node->neighbors) {
                     node_t &nextNode = *edge.first;
                     size_t index = nodePointerToIndex(&nextNode);
                     if(masks[index])
                         continue;
                     else {
                         masks[index] = true;
-                        next.push_back(nextNode);
+                        next.push_back(&nextNode);
                     }
                 }
             }
-            std::for_each(nodes.begin(), nodes.end(), func);
+            std::for_each(curr.begin(), curr.end(), [&func](node_t *p){func(*p);});
             if(!next.empty())
                 bfs_helper(func, masks, next);
         }
@@ -248,15 +259,16 @@ namespace hust_xxxx {
     template <typename data_t>
     class directed_weighted_graph : public basic_graph<data_t> {
     public:
+        using super = basic_graph<data_t>;
         directed_weighted_graph() = default;
         virtual ~directed_weighted_graph() = default;
 
         virtual void insertEdge(const std::string &lang) override {
-            fromEdgeLanguage(lang, true);
+            super::fromEdgeLanguage(lang, true);
         }
         virtual void removeEdge(const std::string &lang) override {
             auto nodeLang = "`"s + rlib::splitString(lang, '`')[1];
-            fromNodeLanguage(lang)->neighbors.erase(fromEdgeLanguage(lang));
+            super::fromNodeLanguage(lang)->neighbors.erase(super::fromEdgeLanguage(lang));
         }
     };
 
@@ -269,14 +281,14 @@ namespace hust_xxxx {
         virtual void insertEdge(const std::string &lang) override {
             auto parts = rlib::splitString(lang, '`');
             std::string reversedLang = rlib::joinString('`', std::array<std::string, 3>{parts[0], parts[2], parts[1]});
-            directed_weighted_graph::insertEdge(lang);
-            directed_weighted_graph::insertEdge(reversedLang);
+            directed_weighted_graph<data_t>::insertEdge(lang);
+            directed_weighted_graph<data_t>::insertEdge(reversedLang);
         }
         virtual void removeEdge(const std::string &lang) override {
             auto parts = rlib::splitString(lang, '`');
             std::string reversedLang = rlib::joinString('`', std::array<std::string, 3>{parts[0], parts[2], parts[1]});
-            directed_weighted_graph::removeEdge(lang);
-            directed_weighted_graph::removeEdge(reversedLang);
+            directed_weighted_graph<data_t>::removeEdge(lang);
+            directed_weighted_graph<data_t>::removeEdge(reversedLang);
         }
     };
 
@@ -289,7 +301,7 @@ namespace hust_xxxx {
         virtual void insertEdge(const std::string &lang) override {
             auto parts = rlib::splitString(lang, '`');
             parts[0] = '1';
-            directed_weighted_graph::insertEdge(rlib::joinString('`', parts));
+            directed_weighted_graph<data_t>::insertEdge(rlib::joinString('`', parts));
         }
     };
 
@@ -302,7 +314,7 @@ namespace hust_xxxx {
         virtual void insertEdge(const std::string &lang) override {
             auto parts = rlib::splitString(lang, '`');
             parts[0] = '1';
-            undirected_weighted_graph::insertEdge(rlib::joinString('`', parts));
+            undirected_weighted_graph<data_t>::insertEdge(rlib::joinString('`', parts));
         }
     };
 }

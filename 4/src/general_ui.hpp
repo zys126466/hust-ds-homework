@@ -24,10 +24,20 @@ public:
 
     [[noreturn]] static void go(const callback_t &callback) {
         callback(splitString("help"));
+        bool scripting = false;
         while(true) {
-            prompt();
+            if(!scripting)
+                prompt();
             try {
-                callback(splitString(rlib::scanln()));
+                auto cont = rlib::scanln();
+                if(cont.find("#!") != std::string::npos) { //Remove annoying prompt while scripting.
+                    rlib::println();
+                    scripting = true;
+                }
+                size_t pos = cont.find('#');
+                if(pos != std::string::npos)
+                    cont = cont.substr(0, pos); //Remove comments. Avoid rlib::splitString to make it faster.
+                callback(splitString(cont));
             }
             catch(std::exception &e) {
                 showError(e.what());

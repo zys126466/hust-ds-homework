@@ -103,7 +103,6 @@ public:
     int live();
 };
 
-#endif
 // Copyright (C) 2009 Chris Double. All Rights Reserved.
 // The original author of this code can be contacted at: chris.double@double.co.nz
 // 
@@ -158,13 +157,15 @@ public:
 //
 
 #include <thread>
+#include <chrono>
+using namespace std::chrono_literals;
 
 class GCThread
 {
 public:
     GCThread() : th([]{
         while(true) {
-            sleep(1);
+            std::this_thread::sleep_for(2s);
             GarbageCollector::GC.collect();
         }
     }) {
@@ -177,6 +178,7 @@ private:
 
 
 
+#endif
 
 
 

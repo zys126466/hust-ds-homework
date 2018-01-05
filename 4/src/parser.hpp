@@ -61,6 +61,7 @@ In addition, NodeAddress is guaranteed to be valid during the lifetime of the pr
 Usually, you needn't fill all areas in a "Language". For example:
 
 rfaketerm ~ CreateGraph directed_unweighted_graph
+rfaketerm ~ Select 0
 rfaketerm ~ PutVex 200`
 rfaketerm ~ LocateVex 100
 100`FFFF04AE
@@ -72,15 +73,22 @@ rfaketerm ~ PutVex 666`
 rfaketerm ~ QuickTraverse
 200`FFFF04AE 2333`FFFF04BE 666`FFFF010A
 rfaketerm ~ InsertVex `FFFF04AE`FFFF010A
-rfaketerm ~
-rfaketerm ~
-rfaketerm ~
-rfaketerm ~
-rfaketerm ~
-rfaketerm ~
+rfaketerm ~ DFSTraverse
+...
 
 In order to simplify node address, you can set an "alias to address" while performing "PutVex".
-Any given address will be checked if it've been registered as an alias, so they're converted before
+Any given address will be checked if it've been registered as an alias.
+For example:
+
+rfaketerm ~ PutVex 200`node1
+rfaketerm ~ PutVex 2333`node2
+rfaketerm ~ PutVex 666`
+rfaketerm ~ QuickTraverse
+200`FFFF04AE 2333`FFFF04BE 666`FFFF010A
+rfaketerm ~ GetVex `node2
+2333`FFFF04BE
+rfaketerm ~ GetVex `FFFF04BE
+2333`FFFF04BE
 
 )_STR_";
         rlib::println(msg);

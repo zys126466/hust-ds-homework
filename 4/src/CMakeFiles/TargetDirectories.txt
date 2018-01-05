@@ -1,0 +1,4 @@
+/home/recolic/Documents/hust_shits/4/src/CMakeFiles/rebuild_cache.dir
+/home/recolic/Documents/hust_shits/4/src/CMakeFiles/edit_cache.dir
+/home/recolic/Documents/hust_shits/4/src/CMakeFiles/r.dir
+/home/recolic/Documents/hust_shits/4/src/CMakeFiles/exp4.dir
