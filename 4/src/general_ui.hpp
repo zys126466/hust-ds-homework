@@ -38,7 +38,7 @@ public:
     }
 private:
     static void prompt() {
-        if constexpr(rlib::OSInfo::os == rlib::OSInfo::os_t::WINDOWS) {
+        if(rlib::OSInfo::os == rlib::OSInfo::os_t::WINDOWS) {
             rlib::printf("rfaketerm 0.2 ~");
         }
         else {

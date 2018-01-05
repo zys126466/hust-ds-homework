@@ -8,11 +8,14 @@
 
 #include <rlib/stdio.hpp>
 #include <rlib/terminal.hpp>
+
 using namespace rlib::terminal;
 
-class parser {
+class parser
+{
 private:
-    static void help_msg() {
+    static void help_msg()
+    {
         std::string msg = R"_STR_(
 rfaketerm 0.2 HUST_xxxx special edition
 
@@ -22,80 +25,77 @@ rfaketerm 0.2 HUST_xxxx special edition
 
 CommandName [Arguments ...] -> ReturnValue # Instructions
 
+# Commands useful to operate
 help -> null # Show this message
 exit -> null # exit politely
-Select [int i] -> null # Select which btree to use (Select 0 by default, index starts from zero)
-List -> null # List how many btree is working currently
+Select [int i] -> null # Select which graph to use (Select 0 by default, index starts from zero)
+List -> null # List how many graph is working currently
+QuickTraverse # Print all nodes information to stdout in current graph
 
-InitBiTree -> null
-DestroyBiTree -> null
-CreateBiTree -> null
-ClearBiTree -> null
-BiTreeEmpty -> bool
-BiTreeDepth -> int
-Root -> NodeLanguage
-Value [NodeLanguage n] -> data_t
-Assign [NodeLanguage n, data_t val] -> null
-Parent [NodeLanguage n] -> NodeLanguage
-LeftChild [NodeLanguage n] -> NodeLanguage
-RightChild [NodeLanguage n] -> NodeLanguage
-LeftSibling [NodeLanguage n] -> NodeLanguage
-RightSibling [NodeLanguage n] -> NodeLanguage
-InsertChild [NodeLanguage n, int toInsert, int LR] -> null # toInsert is index of btree to insert, start from zero, in `List`
-DeleteChild [NodeLanguage n, int LR] -> null
-PreOrderTraverse -> null
-InOrderTraverse -> null
-PostOrderTraverse -> null
-LevelOrderTraverse -> null
+# Commands required by Question Book
+CreateGraph [string typeStr] -> null # typeStr must be one of: 'directed_weighted_graph' 'undirected_weighted_graph' 'directed_unweighted_graph' 'undirected_unweighted_graph'
+DestroyGraph -> null
+LocateVex [data_t val] -> Language
+GetVex [Language lang] -> Language
+PutVex [Language lang] -> null # omit `address` to append a new node, otherwise to edit a existing node.
+FirstAdjVex [Language lang] -> Language
+NextAdjVex [Language lang1, Language lang2] -> Language
+InsertVex [Language lang] -> null
+DeleteVex [Language lang] -> null
+InsertArc [Language lang] -> null
+DeleteArc [Language lang] -> null
+DFSTraverse -> null
+BFSTraverse -> null
 
->>> What's NodeLanguage?
+>>> What's Language? How should I use it?
 
-NodeLanguage is a string language, with which you can appoint a node in a tree easily and quickly.
-Example: assume you have a tree like this now,
+Language includes NodeLanguage and EdgeLanguage.
 
-         A
-        / \
-       B   C
-      / \   \
-     F  G    H
-       /    /
-      J    X
+NodeLanguage is a string language, with which you can describe a node in a graph.
+It's a string with format: [value]`[address]
 
-Then you can use NodeLanguage to represent every node:
-    A = ""
-    B = "L"
-    C = "R"
-    F = "LL"
-    G = "LR"
-    H = "RR"
-    J = "LRL"
-    X = "RRL"
+EdgeLanguage is a string language, with which you can describe an edge connected with two valid nodes.
+It's a string with format: [weight]`<nodeAddressFrom>`[nodeAddressTo]
 
-Every 'L' and 'R' represents a step, and you can reach the node step by step.
-You can also appoint a not existing node, sothat you can insert a node here. But all node in the path must exists, here're examples:
+In addition, NodeAddress is guaranteed to be valid during the lifetime of the process, unless erased.
+Usually, you needn't fill all areas in a "Language". For example:
 
-Assign(Y, "RRLR"); //Good
-Assign(D, "RLL"); //Bad, "RL" not exist
-Assign(M, "L"); //Valid, B is erased and M is assigned
-Assign(N , "   LR L  L "); //Valid, extra spaces are allowed in NodeLanguage
+rfaketerm ~ CreateGraph directed_unweighted_graph
+rfaketerm ~ PutVex 200`
+rfaketerm ~ LocateVex 100
+100`FFFF04AE
+rfaketerm ~ GetVex `FFFF04AE
+100`FFFF04AE
+rfaketerm ~ PutVex 200`FFFF04AE
+rfaketerm ~ PutVex 2333`
+rfaketerm ~ PutVex 666`
+rfaketerm ~ QuickTraverse
+200`FFFF04AE 2333`FFFF04BE 666`FFFF010A
+rfaketerm ~ InsertVex `FFFF04AE`FFFF010A
+rfaketerm ~
+rfaketerm ~
+rfaketerm ~
+rfaketerm ~
+rfaketerm ~
+rfaketerm ~
 
-So you can build a tree quickly in my terminal like this:
-rfaketerm ~ Assign  1
-rfaketerm ~ Assign L 3
-rfaketerm ~ Assign R 22
-rfaketerm ~ Assign LR 11
+In order to simplify node address, you can set an "alias to address" while performing "PutVex".
+Any given address will be checked if it've been registered as an alias, so they're converted before
+
 )_STR_";
         rlib::println(msg);
     }
+
 public:
-    static void parse(const std::vector<std::string> &to_parse) {
-        if(to_parse.empty())
+    static void parse(const std::vector<std::string> &to_parse)
+    {
+        if (to_parse.empty())
             return;
         rlib::print(std::boolalpha);
 
 #define AREA_BEGIN if(to_parse.begin()->empty()) {}
 #define IFCMD(str) else if(*to_parse.begin() == str)
-#define AREA_END else 
+#define AREA_END else
 
 #define WANT_ARG(n) if(to_parse.size() != n+1) {throw std::runtime_error(rlib::format_string("{} arguments wanted but {} provided.", n, to_parse.size()-1));}
 #define STRING_ARG(n) to_parse[n]
@@ -104,151 +104,132 @@ public:
 #define HAVE_RETURN_VALUE auto ret =
 #define PRINT_RETURN_VALUE rlib::println(ret);
 
-    AREA_BEGIN
+        AREA_BEGIN
+//__ccgen_managed_begin__
+
 //Code generated by ccgen.py below. Do not edit them by hand.
 //__ccgen_debug__: `ret name(args)` is `null Select(size_t i)`
-    IFCMD("Select") {
-        WANT_ARG(1)
-        impl.Select(SIZE_ARG(1));
-    }
+        IFCMD("Select")
+        {
+            WANT_ARG(1)
+            impl.Select(SIZE_ARG(1));
+        }
 //__ccgen_debug__: `ret name(args)` is `null List()`
-    IFCMD("List") {
-        WANT_ARG(0)
-        impl.List();
-    }
-//__ccgen_debug__: `ret name(args)` is `null InitBiTree()`
-    IFCMD("InitBiTree") {
-        WANT_ARG(0)
-        impl.InitBiTree();
-    }
-//__ccgen_debug__: `ret name(args)` is `null DestroyBiTree()`
-    IFCMD("DestroyBiTree") {
-        WANT_ARG(0)
-        impl.DestroyBiTree();
-    }
-//__ccgen_debug__: `ret name(args)` is `null CreateBiTree()`
-    IFCMD("CreateBiTree") {
-        WANT_ARG(0)
-        impl.CreateBiTree();
-    }
-//__ccgen_debug__: `ret name(args)` is `null ClearBiTree()`
-    IFCMD("ClearBiTree") {
-        WANT_ARG(0)
-        impl.ClearBiTree();
-    }
-//__ccgen_debug__: `ret name(args)` is `bool BiTreeEmpty()`
-    IFCMD("BiTreeEmpty") {
-        WANT_ARG(0)
-        HAVE_RETURN_VALUE
-        impl.BiTreeEmpty();
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `size_t BiTreeDepth()`
-    IFCMD("BiTreeDepth") {
-        WANT_ARG(0)
-        HAVE_RETURN_VALUE
-        impl.BiTreeDepth();
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `NodeLanguage Root()`
-    IFCMD("Root") {
-        WANT_ARG(0)
-        HAVE_RETURN_VALUE
-        impl.Root();
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `data_t Value(NodeLanguage n)`
-    IFCMD("Value") {
-        WANT_ARG(1)
-        HAVE_RETURN_VALUE
-        impl.Value(STRING_ARG(1));
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `null Assign(NodeLanguage n, data_t val)`
-    IFCMD("Assign") {
-        WANT_ARG(2)
-        impl.Assign(STRING_ARG(1), INT_ARG(2));
-    }
-//__ccgen_debug__: `ret name(args)` is `NodeLanguage Parent(NodeLanguage n)`
-    IFCMD("Parent") {
-        WANT_ARG(1)
-        HAVE_RETURN_VALUE
-        impl.Parent(STRING_ARG(1));
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `NodeLanguage LeftChild(NodeLanguage n)`
-    IFCMD("LeftChild") {
-        WANT_ARG(1)
-        HAVE_RETURN_VALUE
-        impl.LeftChild(STRING_ARG(1));
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `NodeLanguage RightChild(NodeLanguage n)`
-    IFCMD("RightChild") {
-        WANT_ARG(1)
-        HAVE_RETURN_VALUE
-        impl.RightChild(STRING_ARG(1));
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `NodeLanguage LeftSibling(NodeLanguage n)`
-    IFCMD("LeftSibling") {
-        WANT_ARG(1)
-        HAVE_RETURN_VALUE
-        impl.LeftSibling(STRING_ARG(1));
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `NodeLanguage RightSibling(NodeLanguage n)`
-    IFCMD("RightSibling") {
-        WANT_ARG(1)
-        HAVE_RETURN_VALUE
-        impl.RightSibling(STRING_ARG(1));
-        PRINT_RETURN_VALUE
-    }
-//__ccgen_debug__: `ret name(args)` is `null InsertChild(NodeLanguage n, size_t toInsert, size_t LR)`
-    IFCMD("InsertChild") {
-        WANT_ARG(3)
-        impl.InsertChild(STRING_ARG(1), SIZE_ARG(2), SIZE_ARG(3));
-    }
-//__ccgen_debug__: `ret name(args)` is `null DeleteChild(NodeLanguage n, size_t LR)`
-    IFCMD("DeleteChild") {
-        WANT_ARG(2)
-        impl.DeleteChild(STRING_ARG(1), SIZE_ARG(2));
-    }
-//__ccgen_debug__: `ret name(args)` is `null PreOrderTraverse()`
-    IFCMD("PreOrderTraverse") {
-        WANT_ARG(0)
-        impl.PreOrderTraverse();
-    }
-//__ccgen_debug__: `ret name(args)` is `null InOrderTraverse()`
-    IFCMD("InOrderTraverse") {
-        WANT_ARG(0)
-        impl.InOrderTraverse();
-    }
-//__ccgen_debug__: `ret name(args)` is `null PostOrderTraverse()`
-    IFCMD("PostOrderTraverse") {
-        WANT_ARG(0)
-        impl.PostOrderTraverse();
-    }
-//__ccgen_debug__: `ret name(args)` is `null LevelOrderTraverse()`
-    IFCMD("LevelOrderTraverse") {
-        WANT_ARG(0)
-        impl.LevelOrderTraverse();
-    }
+        IFCMD("List")
+        {
+            WANT_ARG(0)
+            impl.List();
+        }
+//__ccgen_debug__: `ret name(args)` is `null QuickTraverse()`
+        IFCMD("QuickTraverse")
+        {
+            WANT_ARG(0)
+            impl.QuickTraverse();
+        }
+//__ccgen_debug__: `ret name(args)` is `null CreateGraph(Language typeStr)`
+        IFCMD("CreateGraph")
+        {
+            WANT_ARG(1)
+            impl.CreateGraph(STRING_ARG(1));
+        }
+//__ccgen_debug__: `ret name(args)` is `null DestroyGraph()`
+        IFCMD("DestroyGraph")
+        {
+            WANT_ARG(0)
+            impl.DestroyGraph();
+        }
+//__ccgen_debug__: `ret name(args)` is `Language LocateVex(data_t val)`
+        IFCMD("LocateVex")
+        {
+            WANT_ARG(1)
+            HAVE_RETURN_VALUE
+            impl.LocateVex(INT_ARG(1));
+            PRINT_RETURN_VALUE
+        }
+//__ccgen_debug__: `ret name(args)` is `Language GetVex(Language lang)`
+        IFCMD("GetVex")
+        {
+            WANT_ARG(1)
+            HAVE_RETURN_VALUE
+            impl.GetVex(STRING_ARG(1));
+            PRINT_RETURN_VALUE
+        }
+//__ccgen_debug__: `ret name(args)` is `null PutVex(Language lang)`
+        IFCMD("PutVex")
+        {
+            WANT_ARG(1)
+            impl.PutVex(STRING_ARG(1));
+        }
+//__ccgen_debug__: `ret name(args)` is `Language FirstAdjVex(Language lang)`
+        IFCMD("FirstAdjVex")
+        {
+            WANT_ARG(1)
+            HAVE_RETURN_VALUE
+            impl.FirstAdjVex(STRING_ARG(1));
+            PRINT_RETURN_VALUE
+        }
+//__ccgen_debug__: `ret name(args)` is `Language NextAdjVex(Language lang1, Language lang2)`
+        IFCMD("NextAdjVex")
+        {
+            WANT_ARG(2)
+            HAVE_RETURN_VALUE
+            impl.NextAdjVex(STRING_ARG(1), STRING_ARG(2));
+            PRINT_RETURN_VALUE
+        }
+//__ccgen_debug__: `ret name(args)` is `null InsertVex(Language lang)`
+        IFCMD("InsertVex")
+        {
+            WANT_ARG(1)
+            impl.InsertVex(STRING_ARG(1));
+        }
+//__ccgen_debug__: `ret name(args)` is `null DeleteVex(Language lang)`
+        IFCMD("DeleteVex")
+        {
+            WANT_ARG(1)
+            impl.DeleteVex(STRING_ARG(1));
+        }
+//__ccgen_debug__: `ret name(args)` is `null InsertArc(Language lang)`
+        IFCMD("InsertArc")
+        {
+            WANT_ARG(1)
+            impl.InsertArc(STRING_ARG(1));
+        }
+//__ccgen_debug__: `ret name(args)` is `null DeleteArc(Language lang)`
+        IFCMD("DeleteArc")
+        {
+            WANT_ARG(1)
+            impl.DeleteArc(STRING_ARG(1));
+        }
+//__ccgen_debug__: `ret name(args)` is `null DFSTraverse()`
+        IFCMD("DFSTraverse")
+        {
+            WANT_ARG(0)
+            impl.DFSTraverse();
+        }
+//__ccgen_debug__: `ret name(args)` is `null BFSTraverse()`
+        IFCMD("BFSTraverse")
+        {
+            WANT_ARG(0)
+            impl.BFSTraverse();
+        } IFCMD("exit")
+        {
+            rlib::println("bye~");
+            ::std::exit(0);
+        } IFCMD("help")
+        {
+            help_msg();
+        }
+//impl.debug();
+//Code generated by ccgen.py ahead. Do not edit them by hand.
 
-    IFCMD("exit") {
-        rlib::println("bye~");
-        ::std::exit(0);
-    }
-    IFCMD("help") {
-        help_msg();
-    }
-    //Code generated by ccgen.py ahead. Do not edit them by hand.
-    AREA_END {
-        throw std::invalid_argument("Invalid argument. Try to type `help` to get helped.");
-    }
- 
+//__ccgen_managed_end__
+        AREA_END
+        {
+            throw std::invalid_argument("Invalid argument. Try to type `help` to get helped.");
+        }
 
-   }
+
+    }
 };
 
 #endif //_HUST___PARSER_HPP

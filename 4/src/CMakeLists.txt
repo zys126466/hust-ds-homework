@@ -20,7 +20,7 @@ include_directories(".")
 ##        COMMENT "Calling rlib makefile to build libr.a")
 add_library(r STATIC rlib/libr.cc)
 
-set(BUILD_SRC main.cc reflected_impl.hpp general_ui.hpp parser.hpp graph.hpp gc/gc.cpp gc/gc.h)
+set(BUILD_SRC main.cc reflected_impl.hpp general_ui.hpp parser.hpp graph.hpp gc/gc.cpp gc/gc.h indexed_list.hpp)
 add_executable(exp3 ${BUILD_SRC})
 ##add_dependencies(exp3 build_libr)
 

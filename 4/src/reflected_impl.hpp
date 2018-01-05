@@ -135,9 +135,11 @@ public:
     using langref_t = const lang_t &;
     reflected_impl() : containers(1), current(containers.begin()) {}
 
+    // __py_ccgen_begin__
     void Select(size_t i) {current = containers.begin() + i;}
     void List() {rlib::printfln("You have {} basic_graph now, selecting {}.", containers.size(), current - containers.begin());}
-    void CreateGraph(const std::string &typeStr) {containers.push_back(*newFromTypeStr(typeStr));}
+    void QuickTraverse() {current->simple_foreach(basic_graph<data_t>::printer);rlib::println();}
+    void CreateGraph(langref_t typeStr) {containers.push_back(*newFromTypeStr(typeStr));}
     void DestroyGraph() {containers.erase(current); current = containers.begin();}
     lang_t LocateVex(dataref_t val) {return current->findNode(val);}
     lang_t GetVex(langref_t lang) {return current->getNodeValue(lang);}
@@ -148,6 +150,9 @@ public:
     void DeleteVex(langref_t lang) {current->removeNode(lang);}
     void InsertArc(langref_t lang) {current->insertEdge(lang);}
     void DeleteArc(langref_t lang) {current->removeEdge(lang);}
+    void DFSTraverse() {current->dfs(basic_graph<data_t>::printer);rlib::println();}
+    void BFSTraverse() {current->bfs(basic_graph<data_t>::printer);rlib::println();}
+    // __py_ccgen_end__
 
 private:
     basic_graph<data_t> *newFromTypeStr(const std::string &typeStr) {

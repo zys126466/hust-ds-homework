@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <queue>
 #include <stack>
+#include <unordered_map>
 
 namespace hust_xxxx {
     template <typename data_t>
@@ -46,6 +47,16 @@ namespace hust_xxxx {
             ss << dat;
             return std::move(ss.str());
         }
+        std::string deAlias(const std::string &addr) {
+            if(addr.empty())
+                return addr;
+            try {
+                return nodeAlias.at(addr);
+            }
+            catch (std::out_of_range &) {
+                return addr;
+            }
+        }
         std::string toNodeLanguage(const node_t &node) {
             std::stringstream ss;
             ss << node.dat << '`' << std::hex << (uint64_t)(&node) << std::dec;
@@ -57,12 +68,12 @@ namespace hust_xxxx {
             return std::move(ss.str());
         }
         auto fromNodeLanguage(const std::string &lang, bool newIfInvalidAddr = false, bool assignIfNew = false, bool assignIfExist = false) {
-            auto pos = lang.find('`');
-            if(pos == std::string::npos)
+            auto datAndAddr = rlib::splitString(lang, '`');
+            if(datAndAddr.size() != 2)
                 throw std::invalid_argument("fromNodeLanguage want a nodeLanguage with address, but got bad format.");
-            data_t val = stringToDataObj(lang.substr(0, pos));
+            data_t val = stringToDataObj(datAndAddr[0]);
             static_assert(std::is_same<uint64_t, unsigned long long>::value, "unsigned long long isn't uint64_t");
-            uint64_t addr = std::stoull(lang.substr(pos + 1), nullptr, 16);
+            uint64_t addr = std::stoull(deAlias(datAndAddr[1]), nullptr, 16);
 
             auto target = nodes.end();
             try {
@@ -82,6 +93,9 @@ namespace hust_xxxx {
                 nodes.push_back(*new node_t(val));
             else
                 nodes.push_back(*new node_t());
+            if(!datAndAddr[1].empty()) {
+                nodeAlias[datAndAddr[1]] = std::to_string(reinterpret_cast<uint64_t>(&*(--nodes.end())));
+            } //appointed alias
             return nodes.end() - 1;
         }
         virtual auto fromEdgeLanguage(const std::string &lang, bool newIfInvalidAddr = false) {
@@ -90,8 +104,8 @@ namespace hust_xxxx {
                 throw std::invalid_argument("bad edge language");
             weight_t val = stringToDataObj<weight_t>(arg[0]);
             static_assert(std::is_same<uint64_t, unsigned long long>::value, "unsigned long long isn't uint64_t");
-            node_t *addrFrom = reinterpret_cast<node_t *>(std::stoull(arg[1], nullptr, 16));
-            node_t *addrTo = reinterpret_cast<node_t *>(std::stoull(arg[2], nullptr, 16));
+            node_t *addrFrom = reinterpret_cast<node_t *>(std::stoull(deAlias(arg[1]), nullptr, 16));
+            node_t *addrTo = reinterpret_cast<node_t *>(std::stoull(deAlias(arg[2]), nullptr, 16));
 
             //silly clion can't deduct this type, help him out.
             decltype(nodes.begin()) target = nodePointerToIter(addrFrom); //throws std::invalid_argument
@@ -112,14 +126,34 @@ namespace hust_xxxx {
                     throw std::invalid_argument("requested edge not exist");
             }
         }
+
+// For std::vector<>, O(1) convert...
+//        size_t nodePointerToIndex(node_t *ptr) {
+//            node_t *begin = nodes.data();
+//            if(ptr - begin >= nodes.size() || ptr - begin < 0)
+//                throw std::invalid_argument("nodePointerToIter failed: not found.");
+//            return ptr - begin;
+//        }
+//        auto nodePointerToIter(node_t *ptr) {
+//            return nodes.begin() + nodePointerToIndex(ptr);
+//        }
+
+        //Warning: O(n) is too slow!
         size_t nodePointerToIndex(node_t *ptr) {
-            node_t *begin = nodes.data();
-            if(ptr - begin >= nodes.size() || ptr - begin < 0)
-                throw std::invalid_argument("nodePointerToIter failed: not found.");
-            return ptr - begin;
+            size_t cter = 0;
+            for(auto iter = nodes.begin(); iter != nodes.end(); ++iter, ++cter) {
+                if(&*iter == ptr)
+                    return cter;
+            }
+            throw std::invalid_argument("nodePointerToIndex failed: node not found.");
         }
+        //Warning: O(n) is too slow!
         auto nodePointerToIter(node_t *ptr) {
-            return nodes.begin() + nodePointerToIndex(ptr);
+            for(auto iter = nodes.begin(); iter != nodes.end(); ++iter, ++cter) {
+                if(&*iter == ptr)
+                    return iter;
+            }
+            throw std::invalid_argument("nodePointerToIndex failed: node not found.");
         }
 
     public:
@@ -159,12 +193,12 @@ namespace hust_xxxx {
         }
 
         using node_visiter = std::function<void(node_t &)>;
-        node_visiter printer = [](node_t &nd){rlib::printf("{} ", nd.dat);};
-        void dfs(node_visiter &func) {
+        static const node_visiter printer = [](node_t &nd){rlib::printf("{} ", nd.dat);};
+        void dfs(const node_visiter &func) {
             std::vector<bool> masks(nodes.size(), false);
             dfs_helper(func, masks, *nodes.begin());
         }
-        void dfs_helper(node_visiter &func, std::vector<bool> &masks, const node_t &curr) {
+        void dfs_helper(const node_visiter &func, std::vector<bool> &masks, const node_t &curr) {
             for(auto &edge : curr.neighbors) {
                 node_t &next = *edge.first;
                 size_t index = nodePointerToIndex(&next);
@@ -177,11 +211,11 @@ namespace hust_xxxx {
                 }
             }
         }
-        void bfs(node_visiter &func) {
+        void bfs(const node_visiter &func) {
             std::vector<bool> masks(nodes.size(), false);
             bfs_helper(func, masks, *nodes.begin());
         }
-        void bfs_helper(node_visiter &func, std::vector<bool> &masks, const std::list<node_t &> &curr) {
+        void bfs_helper(const node_visiter &func, std::vector<bool> &masks, const std::list<node_t &> &curr) {
             std::list<node_t &> next;
             for(node_t &node : curr) {
                 for(auto &edge : node.neighbors) {
@@ -199,16 +233,20 @@ namespace hust_xxxx {
             if(!next.empty())
                 bfs_helper(func, masks, next);
         }
+        void simple_foreach(const node_visiter &func) {
+            std::for_each(nodes.begin(), nodes.end(), func);
+        }
 
         virtual void insertEdge(const std::string &lang) = 0;
         virtual void removeEdge(const std::string &lang) = 0;
     protected:
-        std::vector<node_t> nodes;
+        std::list<node_t> nodes;
+        std::unordered_map<std::string, std::string> nodeAlias;
     };
 
 
     template <typename data_t>
-    class directed_weighted_graph : public basic_graph {
+    class directed_weighted_graph : public basic_graph<data_t> {
     public:
         directed_weighted_graph() = default;
         virtual ~directed_weighted_graph() = default;
@@ -223,7 +261,7 @@ namespace hust_xxxx {
     };
 
     template <typename data_t>
-    class undirected_weighted_graph : public directed_weighted_graph {
+    class undirected_weighted_graph : public directed_weighted_graph<data_t> {
     public:
         undirected_weighted_graph() = default;
         virtual ~undirected_weighted_graph() = default;
@@ -243,7 +281,7 @@ namespace hust_xxxx {
     };
 
     template <typename data_t>
-    class directed_unweighted_graph : public directed_weighted_graph {
+    class directed_unweighted_graph : public directed_weighted_graph<data_t> {
     public:
         directed_unweighted_graph() = default;
         virtual ~directed_unweighted_graph() = default;
@@ -256,7 +294,7 @@ namespace hust_xxxx {
     };
 
     template <typename data_t>
-    class undirected_unweighted_graph : public undirected_weighted_graph {
+    class undirected_unweighted_graph : public undirected_weighted_graph<data_t> {
     public:
         undirected_unweighted_graph() = default;
         virtual ~undirected_unweighted_graph() = default;
