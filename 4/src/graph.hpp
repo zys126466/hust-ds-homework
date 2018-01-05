@@ -279,7 +279,7 @@ namespace hust_xxxx {
         }
         virtual void removeEdge(const std::string &lang) override {
             auto nodeLang = "`"s + rlib::splitString(lang, '`')[1];
-            super::fromNodeLanguage(lang)->neighbors.erase(super::fromEdgeLanguage(lang));
+            super::fromNodeLanguage(nodeLang)->neighbors.erase(super::fromEdgeLanguage(lang));
         }
     };
 
