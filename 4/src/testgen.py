@@ -25,11 +25,11 @@ for i in range(test_size):
     print('PutVex {}`n{}'.format(i, i))
 
 for i in range(test_size):
-    if random.random() < 0.5:
+    if i != 0 and random.random() < 0.5: # n0 must have edges
         continue
     for _ in range(random.randint(edge_per_node_begin, edge_per_node_end)):
         # May have multiedge / selfring
-        j = random.randint(0, test_size)
+        j = random.randint(0, test_size - 1)
         print('InsertArc `n{}`n{}'.format(i, j))
 
 print('''

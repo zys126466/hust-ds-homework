@@ -34,7 +34,14 @@ namespace hust_xxxx {
             std::vector<edge_t> neighbors;
         };
 
+#ifdef COMPILE_NO_ERASE
+#ifndef NODES_PRE_ALLOC_MEM
+#define NODES_PRE_ALLOC_MEM 10000000
+#endif
+        basic_graph() : nodes(NODES_PRE_ALLOC_MEM) {}
+#else
         basic_graph() = default;
+#endif
         virtual ~basic_graph() = default;
 
     protected:
@@ -136,16 +143,17 @@ namespace hust_xxxx {
         }
 
 // For std::vector<>, O(1) convert...
-//        size_t nodePointerToIndex(node_t *ptr) {
-//            node_t *begin = nodes.data();
-//            if(ptr - begin >= nodes.size() || ptr - begin < 0)
-//                throw std::invalid_argument("nodePointerToIter failed: not found.");
-//            return ptr - begin;
-//        }
-//        auto nodePointerToIter(node_t *ptr) {
-//            return nodes.begin() + nodePointerToIndex(ptr);
-//        }
-
+#ifdef COMPILE_NO_ERASE
+        size_t nodePointerToIndex(const node_t *ptr) {
+            node_t *begin = nodes.data();
+            if(ptr - begin >= nodes.size() * sizeof(node_t) || ptr - begin < 0)
+                throw std::invalid_argument("nodePointerToIter failed: not found.");
+            return ptr - begin;
+        }
+        auto nodePointerToIter(const node_t *ptr) {
+            return nodes.begin() + nodePointerToIndex(ptr);
+        }
+#else
         //Warning: O(n) is too slow!
         size_t nodePointerToIndex(const node_t *ptr) {
             size_t cter = 0;
@@ -163,7 +171,7 @@ namespace hust_xxxx {
             }
             throw std::invalid_argument("nodePointerToIndex failed: node not found.");
         }
-
+#endif
     public:
         std::string findNode(const data_t &val) {
             for(auto &node : nodes) {
@@ -197,7 +205,11 @@ namespace hust_xxxx {
             return "`";
         }
         void removeNode(const std::string &lang) {
+#ifdef COMPILE_NO_ERASE
+            throw std::runtime_error("This program is compiled as vector version, which gets much higher performance but without supporting removeNode.");
+#else
             nodes.erase(fromNodeLanguage(lang));
+#endif
         }
 
         using node_visiter = std::function<void(node_t &)>;
@@ -246,7 +258,11 @@ namespace hust_xxxx {
         virtual void insertEdge(const std::string &lang) = 0;
         virtual void removeEdge(const std::string &lang) = 0;
     protected:
+#ifdef COMPILE_NO_ERASE
+        std::vector<node_t> nodes;
+#else
         std::list<node_t> nodes;
+#endif
         std::unordered_map<std::string, std::string> nodeAlias;
     };
 
