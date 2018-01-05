@@ -1,1 +1,0 @@
-/usr/bin/c++  -g -DMALLOC_CHECK_=2  -rdynamic CMakeFiles/exp4.dir/main.cc.o CMakeFiles/exp4.dir/gc/gc.cpp.o  -o exp4 libr.a -pthread 
